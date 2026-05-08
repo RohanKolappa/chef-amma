@@ -142,7 +142,7 @@ class ChefAmma(Agent):
                 resp = await client.get(
                     "https://maps.googleapis.com/maps/api/place/textsearch/json",
                     params={
-                        "query": f"Indian grocery store near {location}",
+                        "query": f"Indian grocery store {ingredient} near {location}",
                         "key": api_key,
                     },
                 )
@@ -165,8 +165,8 @@ class ChefAmma(Agent):
                     + "."
                 )
 
-        except Exception as e:
-            return f"I had trouble searching for stores: {str(e)}. Try a quick Google Maps search for Indian grocery stores near you."
+        except Exception:
+            return "I had trouble finding stores right now. Try searching Google Maps for Indian grocery stores near you."
 
 
 # ── Entrypoint ────────────────────────────────────────────────────────
