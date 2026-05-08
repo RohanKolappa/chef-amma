@@ -137,7 +137,7 @@ This is a seed implementation of what a comprehensive evaluation framework would
 ## Deployment
 
 - **Frontend + Token Server:** Deployed on Vercel at [https://chef-amma.vercel.app](https://chef-amma.vercel.app). The React frontend is built as a static site. The token server runs as a Vercel Python serverless function (`api/token.py`).
-- **Agent:** Runs locally, connecting to LiveKit Cloud via WebSocket. The agent auto-dispatches to any room created through the deployed frontend. For the agent to respond, it must be running locally with `python agent.py dev`.
+- **Agent:** Deployed on Railway, connecting to LiveKit Cloud via WebSocket. The agent auto-dispatches to any room created through the deployed frontend. Can also be run locally with python agent.py dev for development.
 - **LiveKit Cloud:** Handles all WebRTC media routing. Chosen for managed infrastructure; no need to self-host a media server. Free tier is sufficient for development and demos.
 - **ChromaDB:** Runs locally as a persistent vector store. In production, I'd use a hosted solution like Pinecone or pgvector for reliability and horizontal scaling.
 
