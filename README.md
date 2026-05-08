@@ -2,7 +2,7 @@
 
 A RAG-enabled voice agent built with LiveKit that serves as a warm, opinionated South Indian cooking mentor. Ask her about dosas, sambhar, rasam, or any South Indian dish; she'll guide you through recipes from her cookbook, share cooking wisdom, and help you find Indian grocery stores near you.
 
-**Live Demo:** [https://chef-amma.vercel.app](https://chef-amma.vercel.app) (requires the agent to be running locally — see [Deployment](#deployment))
+**Live Demo:** [https://chef-amma.vercel.app](https://chef-amma.vercel.app) (requires the agent to be running locally; see [Deployment](#deployment))
 
 ## Why Chef Amma?
 
@@ -48,7 +48,7 @@ I love cooking, and I have family in Chennai. I tend to call my own Amma (Tamil 
 
 The token server has two implementations: a FastAPI server (`backend/token_server.py`) for local development, and a Python serverless function (`api/token.py`) for the Vercel deployment. Both generate JWTs with the same grants via GET /api/token. The local FastAPI version additionally accepts an optional room query parameter and exposes a GET /api/health endpoint for debugging.
 
-### Voice Pipeline (STT → LLM → TTS)
+### Voice Pipeline (STT -> LLM -> TTS)
 
 The agent uses a **cascaded streaming pipeline** where all three stages overlap:
 
@@ -85,7 +85,7 @@ OpenAI embeddings (text-embedding-3-small) ──► ChromaDB (persistent, local
 - Overlap ensures no sentence is fully lost at chunk boundaries
 - Works well for prose-heavy cookbook content (recipes, technique descriptions)
 
-**Trade-off:** This cuts across semantic boundaries — a recipe might start in one chunk and end in the next. In production, I'd implement **recipe-level chunking** where each recipe becomes a single chunk, preserving the full context of ingredients + steps + tips. This requires parsing document structure (detecting recipe headers/boundaries), which adds complexity.
+**Trade-off:** This cuts across semantic boundaries: a recipe might start in one chunk and end in the next. In production, I'd implement **recipe-level chunking** where each recipe becomes a single chunk, preserving the full context of ingredients + steps + tips. This requires parsing document structure (detecting recipe headers/boundaries), which adds complexity.
 
 ### Retrieval
 
@@ -105,15 +105,15 @@ When the LLM calls the `search_cookbook` tool:
 I chose **RAG as a tool call** (the LLM decides when to search) rather than auto-injecting context on every turn via `on_user_turn_completed`.
 
 **Why tool call:**
-- Only searches when the LLM judges it's needed — avoids wasting tokens on "how are you?" or non-cooking questions
+- Only searches when the LLM judges it's needed; it avoids wasting tokens on "how are you?" or non-cooking questions
 - The LLM can reformulate the query for better retrieval (the raw speech transcript can be noisy)
-- Explicit and debuggable — you can see exactly when and why the search happened
+- Explicit and debuggable: you can see exactly when and why the search happened
 
-**The trade-off:** Tool calls add a full round-trip of latency (LLM decides → tool executes → LLM generates). This adds ~500-800ms to the response. I mitigate this with:
+**The trade-off:** Tool calls add a full round-trip of latency (LLM decides -> tool executes -> LLM generates). This adds ~500-800ms to the response. I mitigate this with:
 - A verbal status update ("Let me check my cookbook...") if the lookup takes > 0.8s
 - Background "thinking" sounds via LiveKit's BackgroundAudioPlayer
 
-**If I had more time:** I'd implement a **hybrid approach** — use `on_user_turn_completed` with a relevance score threshold. Auto-inject context only when the top result's cosine similarity exceeds 0.85, skip injection otherwise. This gives the latency benefit of auto-inject with less noise than always injecting.
+**If I had more time:** I'd implement a **hybrid approach**: use `on_user_turn_completed` with a relevance score threshold. Auto-inject context only when the top result's cosine similarity exceeds 0.85, skip injection otherwise. This gives the latency benefit of auto-inject with less noise than always injecting.
 
 ## Tool Calls
 
@@ -125,26 +125,26 @@ Uses Google Places Text Search API to find Indian grocery stores near the user's
 
 ## Testing & Evaluation
 
-The project includes a retrieval quality test suite (`backend/test_rag.py`) that validates the RAG pipeline against known ground truth from the cookbook. The suite runs 8 queries with expected keywords derived from specific cookbook pages and verifies that the retrieved chunks contain the correct content.
+The project includes a retrieval quality test suite (`backend/test_rag.py`) that validates the RAG pipeline against known ground truth from the cookbook. The suite runs 11 test cases across recipe, ingredient, technique, and edge_case categories, with expected keywords derived from specific cookbook pages, and verifies that the retrieved chunks contain the correct content.
 
 This is a seed implementation of what a comprehensive evaluation framework would look like. In production, I'd extend it along several dimensions:
 
 - **Retrieval evaluation:** Expand beyond keyword matching to use LLM-as-judge scoring for semantic accuracy, measuring whether retrieved chunks actually answer the question asked.
-- **End-to-end voice evaluation:** Test the full pipeline from speech input to spoken response — verifying STT accuracy on domain-specific terms, tool call triggering rates (does the agent call `search_cookbook` when it should?), and response grounding (does the agent cite cookbook content vs. hallucinating from parametric knowledge?).
+- **End-to-end voice evaluation:** Test the full pipeline from speech input to spoken response: verifying STT accuracy on domain-specific terms, tool call triggering rates (does the agent call `search_cookbook` when it should?), and response grounding (does the agent cite cookbook content vs. hallucinating from parametric knowledge?).
 - **Regression detection:** Run the test suite automatically after any change to chunking parameters, embedding models, or system prompts to catch quality regressions before they reach users.
-- **Simulated conversations:** Generate synthetic user interactions that cover edge cases — ambiguous queries, follow-up questions, non-cooking topics — and evaluate agent behavior against rubrics. This is the direction automated QA platforms take: defining expected behavior, simulating diverse user patterns, and scoring results at scale.
+- **Simulated conversations:** Generate synthetic user interactions that cover edge cases (ambiguous queries, follow-up questions, non-cooking topics) and evaluate agent behavior against rubrics. This is the direction automated QA platforms take: defining expected behavior, simulating diverse user patterns, and scoring results at scale.
 
 ## Deployment
 
 - **Frontend + Token Server:** Deployed on Vercel at [https://chef-amma.vercel.app](https://chef-amma.vercel.app). The React frontend is built as a static site. The token server runs as a Vercel Python serverless function (`api/token.py`).
 - **Agent:** Runs locally, connecting to LiveKit Cloud via WebSocket. The agent auto-dispatches to any room created through the deployed frontend. For the agent to respond, it must be running locally with `python agent.py dev`.
-- **LiveKit Cloud:** Handles all WebRTC media routing. Chosen for managed infrastructure — no need to self-host a media server. Free tier is sufficient for development and demos.
+- **LiveKit Cloud:** Handles all WebRTC media routing. Chosen for managed infrastructure; no need to self-host a media server. Free tier is sufficient for development and demos.
 - **ChromaDB:** Runs locally as a persistent vector store. In production, I'd use a hosted solution like Pinecone or pgvector for reliability and horizontal scaling.
 
 ## Running Locally
 
 ### Prerequisites
-- Python 3.10–3.13 (3.14 is not yet supported by LiveKit)
+- Python 3.10-3.13 (3.14 is not yet supported by LiveKit)
 - Node.js 18+
 - LiveKit Cloud account (free tier works): https://cloud.livekit.io
 - OpenAI API key
