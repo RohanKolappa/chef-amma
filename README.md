@@ -165,6 +165,13 @@ npm run dev
 
 Open http://localhost:5173 and click "Start Cooking Session."
 
+## Deployment
+
+- **Frontend + Token Server:** Deployed on Vercel at [YOUR_VERCEL_URL]. The token server runs as a Vercel Python serverless function.
+- **Agent:** Runs locally, connecting to LiveKit Cloud via WebSocket. The agent auto-dispatches to any room created through the deployed frontend. For the agent to respond, it must be running locally with `python agent.py dev`.
+- **LiveKit Cloud:** Handles all WebRTC media routing. Chosen for managed infrastructure — no need to self-host a media server. Free tier is sufficient for development and demos.
+- **ChromaDB:** Runs locally as a persistent vector store. In production, I'd use a hosted solution like Pinecone or pgvector for reliability and horizontal scaling.
+
 ## What I'd Improve
 
 - **Recipe-level chunking** for the RAG pipeline, preserving full recipe context

@@ -10,7 +10,9 @@ import {
 import "@livekit/components-styles";
 import { ConnectionState, RoomEvent, TranscriptionSegment, Participant } from "livekit-client";
 
-const TOKEN_SERVER_URL = "http://localhost:8080";
+const TOKEN_SERVER_URL = window.location.hostname === "localhost"
+  ? "http://localhost:8080"
+  : "";
 
 // ── Types ────────────────────────────────────────────────────────────
 
