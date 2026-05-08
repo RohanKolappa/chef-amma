@@ -32,6 +32,10 @@ LIVEKIT_API_KEY = os.getenv("LIVEKIT_API_KEY", "")
 LIVEKIT_API_SECRET = os.getenv("LIVEKIT_API_SECRET", "")
 LIVEKIT_URL = os.getenv("LIVEKIT_URL", "")
 
+if not all([LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL]):
+    import warnings
+    warnings.warn("Missing LiveKit environment variables — token generation will fail")
+
 app = FastAPI(title="Chef Amma Token Server")
 
 # Allow the React frontend (running on localhost:5173) to call this server

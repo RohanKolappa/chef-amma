@@ -106,6 +106,10 @@ class ChefAmma(Agent):
             result = await retrieve(query, n_results=3)
         finally:
             status_task.cancel()
+            try:
+                await status_task
+            except asyncio.CancelledError:
+                pass
 
         return f"From my cookbook:\n{result}"
 

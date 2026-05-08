@@ -10,6 +10,12 @@ LIVEKIT_URL = os.environ.get("LIVEKIT_URL", "")
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        if not LIVEKIT_API_KEY or not LIVEKIT_API_SECRET or not LIVEKIT_URL:
+            self.send_response(500)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": "Missing LiveKit environment variables"}).encode())
+            return
         room_name = f"chef-amma-{uuid.uuid4().hex[:8]}"
         user_identity = f"user-{uuid.uuid4().hex[:6]}"
 

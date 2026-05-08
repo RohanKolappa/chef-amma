@@ -46,7 +46,7 @@ I love cooking, and I have family in Chennai. I tend to call my own Amma (Tamil 
 └──────────────────────────────────────────────────────┘
 ```
 
-The token server has two implementations: a FastAPI server (`backend/token_server.py`) for local development, and a Python serverless function (`api/token.py`) for the Vercel deployment. Both serve the same `GET /api/token` endpoint and generate identical JWTs.
+The token server has two implementations: a FastAPI server (`backend/token_server.py`) for local development, and a Python serverless function (`api/token.py`) for the Vercel deployment. Both generate JWTs with the same grants via GET /api/token. The local FastAPI version additionally accepts an optional room query parameter and exposes a GET /api/health endpoint for debugging.
 
 ### Voice Pipeline (STT → LLM → TTS)
 
@@ -121,7 +121,7 @@ I chose **RAG as a tool call** (the LLM decides when to search) rather than auto
 Searches the vector store for recipes, techniques, and ingredient info. Returns concatenated top-k chunks as context for the LLM. Includes a delayed status update pattern: if the lookup takes longer than 0.8s, the agent speaks a brief filler message to maintain conversational flow during the wait.
 
 ### `find_nearby_grocery_stores(ingredient, location)`
-Uses Google Places Text Search API to find Indian grocery stores near the user's location. Returns store names, addresses, and ratings. The default location is Sunnyvale, CA, but the agent picks up location changes from conversation (e.g., "I'm in Oahu" triggers a search in Oahu, HI). Gracefully degrades if the API key isn't configured.
+Uses Google Places Text Search API to find Indian grocery stores near the user's location. Returns store names, addresses, and ratings. The default location is Sunnyvale, CA, but the agent can pick up location changes from conversation when GPT-4o infers the location from context and passes it to the tool call (e.g., "I'm in Oahu" triggers a search in Oahu, HI). Gracefully degrades if the API key isn't configured.
 
 ## Testing & Evaluation
 
@@ -199,4 +199,4 @@ Open http://localhost:5173 and click "Start Cooking Session."
 
 ## AI Tools Used
 
-- Claude (Anthropic) for project scaffolding, architecture planning, and code generation
+- Claude (Anthropic) for project scaffolding, architecture planning, code generation, and debugging during development
