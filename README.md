@@ -2,6 +2,8 @@
 
 A RAG-enabled voice agent built with LiveKit that serves as a warm, opinionated South Indian cooking mentor. Ask her about dosas, sambhar, rasam, or any South Indian dish; she'll guide you through recipes from her cookbook, share cooking wisdom, and help you find Indian grocery stores near you.
 
+**Live Demo:** [https://chef-amma.vercel.app](https://chef-amma.vercel.app) (requires the agent to be running locally — see [Deployment](#deployment))
+
 ## Why Chef Amma?
 
 I love cooking, and I have family in Chennai. I tend to call my own Amma (Tamil word for Mom) and ask her for tips and tricks on how to make Indian food when I'm away from home, so I thought that I could build a tool/mentor that could help me when she's not free. Chef Amma is that mentor: she has strong opinions about doing things properly, sprinkles in Tamil words naturally, and genuinely gets excited when you want to learn a new dish. Just like my own Amma.
@@ -16,8 +18,8 @@ I love cooking, and I have family in Chennai. I tend to call my own Amma (Tamil 
 └──────────────┬──────────────────────────────────────┘
                │ Room Token (JWT)
 ┌──────────────▼──────────────┐
-│   Token Server (FastAPI)     │◄── generates room tokens
-│   GET /api/token             │    signed with LIVEKIT_API_SECRET
+│       Token Server           │◄── generates room tokens
+│       GET /api/token         │    signed with LIVEKIT_API_SECRET
 └──────────────────────────────┘
 
                │ WebRTC via LiveKit Cloud
@@ -44,6 +46,8 @@ I love cooking, and I have family in Chennai. I tend to call my own Amma (Tamil 
 └──────────────────────────────────────────────────────┘
 ```
 
+The token server has two implementations: a FastAPI server (`backend/token_server.py`) for local development, and a Python serverless function (`api/token.py`) for the Vercel deployment. Both serve the same `GET /api/token` endpoint and generate identical JWTs.
+
 ### Voice Pipeline (STT → LLM → TTS)
 
 The agent uses a **cascaded streaming pipeline** where all three stages overlap:
@@ -61,7 +65,9 @@ Streaming at every stage keeps mouth-to-ear latency under ~800ms for non-tool-ca
 
 ### Room Token Generation
 
-The token server is a FastAPI endpoint (`GET /api/token`) that generates JWTs signed with the LiveKit API secret. Each token contains a user identity, room name, and grants (room_join, can_publish, can_subscribe). The frontend receives this JWT and passes it to the LiveKit React SDK, which establishes a WebRTC connection automatically.
+The token server generates JWTs signed with the LiveKit API secret via a `GET /api/token` endpoint. Each token contains a user identity, room name, and grants (`room_join`, `can_publish`, `can_subscribe`). The frontend receives this JWT and passes it to the LiveKit React SDK, which establishes a WebRTC connection automatically.
+
+For local development, the token server runs as a FastAPI app (`backend/token_server.py`). For the Vercel deployment, it runs as a Python serverless function (`api/token.py`) using `BaseHTTPRequestHandler`.
 
 ## RAG Integration
 
@@ -112,12 +118,28 @@ I chose **RAG as a tool call** (the LLM decides when to search) rather than auto
 ## Tool Calls
 
 ### `search_cookbook(query)`
-Searches the vector store for recipes, techniques, and ingredient info. Returns concatenated top-k chunks as context for the LLM.
+Searches the vector store for recipes, techniques, and ingredient info. Returns concatenated top-k chunks as context for the LLM. Includes a delayed status update pattern: if the lookup takes longer than 0.8s, the agent speaks a brief filler message to maintain conversational flow during the wait.
 
 ### `find_nearby_grocery_stores(ingredient, location)`
-Uses Google Places Text Search API to find Indian grocery stores near the user's location. Returns store names, addresses, and ratings. Gracefully degrades if the API key isn't configured.
+Uses Google Places Text Search API to find Indian grocery stores near the user's location. Returns store names, addresses, and ratings. The default location is Sunnyvale, CA, but the agent picks up location changes from conversation (e.g., "I'm in Oahu" triggers a search in Oahu, HI). Gracefully degrades if the API key isn't configured.
 
-The search_cookbook tool includes a delayed status update pattern: if the lookup takes longer than 0.8s, the agent speaks a brief filler message to maintain conversational flow during the wait.
+## Testing & Evaluation
+
+The project includes a retrieval quality test suite (`backend/test_rag.py`) that validates the RAG pipeline against known ground truth from the cookbook. The suite runs 8 queries with expected keywords derived from specific cookbook pages and verifies that the retrieved chunks contain the correct content.
+
+This is a seed implementation of what a comprehensive evaluation framework would look like. In production, I'd extend it along several dimensions:
+
+- **Retrieval evaluation:** Expand beyond keyword matching to use LLM-as-judge scoring for semantic accuracy, measuring whether retrieved chunks actually answer the question asked.
+- **End-to-end voice evaluation:** Test the full pipeline from speech input to spoken response — verifying STT accuracy on domain-specific terms, tool call triggering rates (does the agent call `search_cookbook` when it should?), and response grounding (does the agent cite cookbook content vs. hallucinating from parametric knowledge?).
+- **Regression detection:** Run the test suite automatically after any change to chunking parameters, embedding models, or system prompts to catch quality regressions before they reach users.
+- **Simulated conversations:** Generate synthetic user interactions that cover edge cases — ambiguous queries, follow-up questions, non-cooking topics — and evaluate agent behavior against rubrics. This is the direction automated QA platforms take: defining expected behavior, simulating diverse user patterns, and scoring results at scale.
+
+## Deployment
+
+- **Frontend + Token Server:** Deployed on Vercel at [https://chef-amma.vercel.app](https://chef-amma.vercel.app). The React frontend is built as a static site. The token server runs as a Vercel Python serverless function (`api/token.py`).
+- **Agent:** Runs locally, connecting to LiveKit Cloud via WebSocket. The agent auto-dispatches to any room created through the deployed frontend. For the agent to respond, it must be running locally with `python agent.py dev`.
+- **LiveKit Cloud:** Handles all WebRTC media routing. Chosen for managed infrastructure — no need to self-host a media server. Free tier is sufficient for development and demos.
+- **ChromaDB:** Runs locally as a persistent vector store. In production, I'd use a hosted solution like Pinecone or pgvector for reliability and horizontal scaling.
 
 ## Running Locally
 
@@ -134,6 +156,7 @@ The search_cookbook tool includes a delayed status update pattern: if the lookup
 
 ```bash
 # 1. Clone and enter the project
+git clone https://github.com/RohanKolappa/chef-amma.git
 cd chef-amma
 
 # 2. Backend setup
@@ -165,13 +188,6 @@ npm run dev
 
 Open http://localhost:5173 and click "Start Cooking Session."
 
-## Deployment
-
-- **Frontend + Token Server:** Deployed on Vercel at [YOUR_VERCEL_URL]. The token server runs as a Vercel Python serverless function.
-- **Agent:** Runs locally, connecting to LiveKit Cloud via WebSocket. The agent auto-dispatches to any room created through the deployed frontend. For the agent to respond, it must be running locally with `python agent.py dev`.
-- **LiveKit Cloud:** Handles all WebRTC media routing. Chosen for managed infrastructure — no need to self-host a media server. Free tier is sufficient for development and demos.
-- **ChromaDB:** Runs locally as a persistent vector store. In production, I'd use a hosted solution like Pinecone or pgvector for reliability and horizontal scaling.
-
 ## What I'd Improve
 
 - **Recipe-level chunking** for the RAG pipeline, preserving full recipe context
@@ -179,7 +195,7 @@ Open http://localhost:5173 and click "Start Cooking Session."
 - **Conversation memory** so Chef Amma remembers what you've already asked about in the session
 - **Production vector store** (Pinecone or pgvector) instead of local ChromaDB
 - **Voice selection A/B testing** to find the TTS voice that best matches the persona
-- **Evaluation suite** using LiveKit's test framework to verify Chef Amma's behavior across different question types (recipe queries, ingredient questions, general chat)
+- **Comprehensive evaluation suite** — expand `test_rag.py` into a full pipeline evaluation framework covering retrieval quality, STT accuracy, tool call behavior, and response grounding
 
 ## AI Tools Used
 
