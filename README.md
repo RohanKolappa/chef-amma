@@ -2,7 +2,7 @@
 
 A RAG-enabled voice agent built with LiveKit that serves as a warm, opinionated South Indian cooking mentor. Ask her about dosas, sambhar, rasam, or any South Indian dish; she'll guide you through recipes from her cookbook, share cooking wisdom, and help you find Indian grocery stores near you.
 
-**Live Demo:** [https://chef-amma.vercel.app](https://chef-amma.vercel.app) (requires the agent to be running locally; see [Deployment](#deployment))
+**Live Demo:** [https://chef-amma.vercel.app](https://chef-amma.vercel.app)
 
 ## Why Chef Amma?
 
@@ -61,7 +61,7 @@ Streaming at every stage keeps mouth-to-ear latency under ~800ms for non-tool-ca
 ### Turn Detection & VAD
 
 - **Silero VAD** detects speech presence (is someone speaking right now?)
-- **LiveKit Multilingual Turn Detector** determines if the user is *done* speaking — it analyzes semantic completeness of the transcribed text, not just silence duration. This prevents the agent from interrupting mid-thought when the user pauses to think.
+- **LiveKit Multilingual Turn Detector** determines if the user is *done* speaking; it analyzes semantic completeness of the transcribed text, not just silence duration. This prevents the agent from interrupting mid-thought when the user pauses to think.
 
 ### Room Token Generation
 
@@ -195,7 +195,7 @@ Open http://localhost:5173 and click "Start Cooking Session."
 - **Conversation memory** so Chef Amma remembers what you've already asked about in the session
 - **Production vector store** (Pinecone or pgvector) instead of local ChromaDB
 - **Voice selection A/B testing** to find the TTS voice that best matches the persona
-- **Comprehensive evaluation suite** — expand `test_rag.py` into a full pipeline evaluation framework covering retrieval quality, STT accuracy, tool call behavior, and response grounding
+- **Comprehensive evaluation suite**: expand `test_rag.py` into a full pipeline evaluation framework covering retrieval quality, STT accuracy, tool call behavior, and response grounding
 
 ## AI Tools Used
 
