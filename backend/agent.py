@@ -198,7 +198,7 @@ async def entrypoint(ctx: agents.JobContext):
     # Add thinking sounds during tool calls for natural UX
     background_audio = BackgroundAudioPlayer(
         thinking_sound=[
-            AudioConfig(BuiltinAudioClip.KEYBOARD_TYPING, volume=0.5),
+            AudioConfig(BuiltinAudioClip.CROWDED_ROOM, volume=0.3),
         ],
     )
 
